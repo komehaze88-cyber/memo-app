@@ -37,12 +37,14 @@ export const useMemoStore = create<MemoState>()(
       selectMemo: (path) => set({ selectedMemoPath: path }),
       setCurrentMemo: (memo) => set({ currentMemo: memo, isDirty: false }),
       updateContent: (content) =>
-        set((state) => ({
-          currentMemo: state.currentMemo
-            ? { ...state.currentMemo, content }
-            : null,
-          isDirty: true,
-        })),
+        set((state) => {
+          if (!state.currentMemo) return state;
+          if (state.currentMemo.content === content) return state;
+          return {
+            currentMemo: { ...state.currentMemo, content },
+            isDirty: true,
+          };
+        }),
       markAsSaved: () => set({ isDirty: false }),
       setLoading: (loading) => set({ isLoading: loading }),
       addMemo: (memo) =>
@@ -58,12 +60,17 @@ export const useMemoStore = create<MemoState>()(
             state.selectedMemoPath === path ? null : state.selectedMemoPath,
           currentMemo:
             state.currentMemo?.path === path ? null : state.currentMemo,
+          isDirty: state.currentMemo?.path === path ? false : state.isDirty,
         })),
       updateMemoMeta: (path, meta) =>
         set((state) => ({
           memos: state.memos
             .map((m) => (m.path === path ? { ...m, ...meta } : m))
             .sort((a, b) => b.modified_at - a.modified_at),
+          currentMemo:
+            state.currentMemo?.path === path
+              ? { ...state.currentMemo, ...meta }
+              : state.currentMemo,
         })),
     }),
     {
