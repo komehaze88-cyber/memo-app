@@ -9,6 +9,7 @@ import "@milkdown/theme-nord/style.css";
 interface MarkdownEditorProps {
   content: string;
   onChange: (content: string) => void;
+  filePath?: string;
 }
 
 function MilkdownEditor({ content, onChange }: MarkdownEditorProps) {
@@ -45,10 +46,10 @@ function MilkdownEditor({ content, onChange }: MarkdownEditorProps) {
   return <Milkdown />;
 }
 
-export function MarkdownEditor({ content, onChange }: MarkdownEditorProps) {
+export function MarkdownEditor({ content, onChange, filePath }: MarkdownEditorProps) {
   return (
     <div className="editor-container">
-      <MilkdownProvider key={content}>
+      <MilkdownProvider key={filePath}>
         <MilkdownEditor content={content} onChange={onChange} />
       </MilkdownProvider>
     </div>

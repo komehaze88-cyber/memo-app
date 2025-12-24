@@ -3,7 +3,8 @@
     "allow": [
       "Bash(tree:*)",
       "Bash(npm run build:*)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(cat:*)"
     ]
   }
 }

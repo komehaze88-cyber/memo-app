@@ -49,6 +49,7 @@ function App() {
           <MarkdownEditor
             content={currentMemo.content}
             onChange={updateContent}
+            filePath={selectedMemoPath ?? undefined}
           />
         ) : (
           <EditorPlaceholder />

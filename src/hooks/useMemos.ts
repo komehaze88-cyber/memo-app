@@ -27,6 +27,19 @@ export function useMemos() {
     }
   }, []);
 
+  const openMemo = useCallback(async (filePath: string) => {
+    store.setLoading(true);
+    try {
+      const memo = await tauriCommands.readMemo(filePath);
+      store.selectMemo(filePath);
+      store.setCurrentMemo(memo);
+    } catch (error) {
+      console.error("Failed to open memo:", error);
+    } finally {
+      store.setLoading(false);
+    }
+  }, []);
+
   const selectFolder = useCallback(async () => {
     try {
       const folder = await tauriCommands.selectFolder();
@@ -52,19 +65,6 @@ export function useMemos() {
       console.error("Failed to select folder:", error);
     }
   }, [loadFolder, openMemo, store]);
-
-  const openMemo = useCallback(async (filePath: string) => {
-    store.setLoading(true);
-    try {
-      const memo = await tauriCommands.readMemo(filePath);
-      store.selectMemo(filePath);
-      store.setCurrentMemo(memo);
-    } catch (error) {
-      console.error("Failed to open memo:", error);
-    } finally {
-      store.setLoading(false);
-    }
-  }, []);
 
   const saveMemo = useCallback(async (filePath: string, content: string) => {
     try {

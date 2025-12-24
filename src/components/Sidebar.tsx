@@ -27,7 +27,10 @@ export function Sidebar({
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1 className="sidebar-title">Memo{isDirty && " *"}</h1>
+        <h1 className="sidebar-title">
+          Memo
+          {isDirty && <span className="dirty-indicator" />}
+        </h1>
       </div>
 
       <div className="sidebar-folder">
