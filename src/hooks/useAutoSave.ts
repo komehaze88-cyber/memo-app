@@ -38,13 +38,18 @@ export function useAutoSave(
     }
 
     timeoutRef.current = window.setTimeout(async () => {
-      await saveCallback(filePath, content);
-      lastSavedRef.current = content;
+      const saveForPath = filePath;
+      const saveForContent = content;
+      await saveCallback(saveForPath, saveForContent);
+      if (lastFilePathRef.current === saveForPath) {
+        lastSavedRef.current = saveForContent;
+      }
     }, delay);
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, [content, filePath, saveCallback, delay]);

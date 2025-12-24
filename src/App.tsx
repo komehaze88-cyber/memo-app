@@ -28,7 +28,7 @@ function App() {
     [saveMemo]
   );
 
-  useAutoSave(currentMemo?.content || "", selectedMemoPath, handleSave);
+  useAutoSave(currentMemo?.content || "", currentMemo?.path || null, handleSave);
 
   return (
     <Layout
@@ -47,6 +47,7 @@ function App() {
       editor={
         currentMemo ? (
           <MarkdownEditor
+            memoKey={currentMemo.path}
             content={currentMemo.content}
             onChange={updateContent}
             filePath={selectedMemoPath ?? undefined}

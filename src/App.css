@@ -2,6 +2,7 @@
    CSS Variables
    ======================================== */
 :root {
+<<<<<<< HEAD
   /* Colors - Light Mode */
   --bg-primary: #ffffff;
   --bg-secondary: #fafafa;
@@ -53,6 +54,14 @@
   /* Transitions */
   --transition-fast: 0.12s ease;
   --transition-normal: 0.2s ease;
+=======
+  font-family: "BIZ UDGothic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background-color: #ffffff;
+>>>>>>> 0c1c2285047c2bf67b47ade26252bf766d06068a
 }
 
 /* ========================================
@@ -417,4 +426,9 @@ body {
     --danger-hover: #ff8787;
     --danger-bg: rgba(255, 107, 107, 0.1);
   }
+}
+
+/* Code comment font */
+.cm-comment {
+  font-family: "BIZ UDMincho", serif;
 }

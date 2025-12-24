@@ -25,7 +25,23 @@ export function useMemos() {
     } finally {
       store.setLoading(false);
     }
-  }, []);
+  }, [store]);
+
+  const openMemo = useCallback(
+    async (filePath: string) => {
+      store.setLoading(true);
+      try {
+        const memo = await tauriCommands.readMemo(filePath);
+        store.selectMemo(filePath);
+        store.setCurrentMemo(memo);
+      } catch (error) {
+        console.error("Failed to open memo:", error);
+      } finally {
+        store.setLoading(false);
+      }
+    },
+    [store]
+  );
 
   const openMemo = useCallback(async (filePath: string) => {
     store.setLoading(true);
@@ -74,7 +90,7 @@ export function useMemos() {
     } catch (error) {
       console.error("Failed to save memo:", error);
     }
-  }, []);
+  }, [store]);
 
   const createMemo = useCallback(async () => {
     const { workingFolder } = store;
@@ -88,7 +104,7 @@ export function useMemos() {
     } catch (error) {
       console.error("Failed to create memo:", error);
     }
-  }, [openMemo]);
+  }, [openMemo, store]);
 
   const deleteMemo = useCallback(async (filePath: string) => {
     try {
@@ -97,7 +113,7 @@ export function useMemos() {
     } catch (error) {
       console.error("Failed to delete memo:", error);
     }
-  }, []);
+  }, [store]);
 
   useEffect(() => {
     const { workingFolder } = store;
