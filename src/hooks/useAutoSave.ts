@@ -1,56 +1,47 @@
-import { useEffect, useRef } from "react";
+import { useRef, useCallback, useEffect } from "react";
 
-export function useAutoSave(
+export function useManualSave(
   content: string,
   filePath: string | null,
-  saveCallback: (path: string, content: string) => Promise<void>,
-  delay: number = 1000
+  saveCallback: (path: string, content: string) => Promise<void>
 ) {
-  const timeoutRef = useRef<number | null>(null);
-  const lastSavedRef = useRef<string>("");
-  const lastFilePathRef = useRef<string | null>(null);
+  const contentRef = useRef<string>(content);
+  const filePathRef = useRef<string | null>(filePath);
+  const lastSavedRef = useRef<string>(content);
+  const saveCallbackRef = useRef(saveCallback);
+  const prevFilePathRef = useRef<string | null>(filePath);
 
+  contentRef.current = content;
+  filePathRef.current = filePath;
+  saveCallbackRef.current = saveCallback;
+
+  // ファイルパスが変わったらlastSavedをリセット
   useEffect(() => {
-    if (!filePath) {
-      lastFilePathRef.current = null;
-      lastSavedRef.current = "";
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      return;
-    }
-
-    if (lastFilePathRef.current !== filePath) {
-      lastFilePathRef.current = filePath;
+    if (prevFilePathRef.current !== filePath) {
       lastSavedRef.current = content;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      return;
+      prevFilePathRef.current = filePath;
     }
+  }, [filePath, content]);
 
-    if (content === lastSavedRef.current) return;
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+  const saveNow = useCallback(async () => {
+    const path = filePathRef.current;
+    const currentContent = contentRef.current;
+    if (path && currentContent !== lastSavedRef.current) {
+      await saveCallbackRef.current(path, currentContent);
+      lastSavedRef.current = currentContent;
+      return true;
     }
+    return false;
+  }, []);
 
-    timeoutRef.current = window.setTimeout(async () => {
-      const saveForPath = filePath;
-      const saveForContent = content;
-      await saveCallback(saveForPath, saveForContent);
-      if (lastFilePathRef.current === saveForPath) {
-        lastSavedRef.current = saveForContent;
-      }
-    }, delay);
+  const flushSave = useCallback(async () => {
+    const path = filePathRef.current;
+    const currentContent = contentRef.current;
+    if (path && currentContent !== lastSavedRef.current) {
+      await saveCallbackRef.current(path, currentContent);
+      lastSavedRef.current = currentContent;
+    }
+  }, []);
 
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-  }, [content, filePath, saveCallback, delay]);
+  return { saveNow, flushSave };
 }

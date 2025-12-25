@@ -4,7 +4,9 @@
       "Bash(tree:*)",
       "Bash(npm run build:*)",
       "Bash(cargo build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Bash(cargo check:*)"
     ]
   }
 }

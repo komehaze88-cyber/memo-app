@@ -20,6 +20,7 @@ interface MemoState {
   addMemo: (memo: MemoMeta) => void;
   removeMemo: (path: string) => void;
   updateMemoMeta: (path: string, meta: Partial<MemoMeta>) => void;
+  renameMemo: (oldPath: string, newMeta: MemoMeta) => void;
 }
 
 export const useMemoStore = create<MemoState>()(
@@ -70,6 +71,18 @@ export const useMemoStore = create<MemoState>()(
           currentMemo:
             state.currentMemo?.path === path
               ? { ...state.currentMemo, ...meta }
+              : state.currentMemo,
+        })),
+      renameMemo: (oldPath, newMeta) =>
+        set((state) => ({
+          memos: state.memos
+            .map((m) => (m.path === oldPath ? newMeta : m))
+            .sort((a, b) => b.modified_at - a.modified_at),
+          selectedMemoPath:
+            state.selectedMemoPath === oldPath ? newMeta.path : state.selectedMemoPath,
+          currentMemo:
+            state.currentMemo?.path === oldPath
+              ? { ...state.currentMemo, path: newMeta.path, name: newMeta.name }
               : state.currentMemo,
         })),
     }),

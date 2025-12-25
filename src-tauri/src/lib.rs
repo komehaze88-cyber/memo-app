@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{create_memo, delete_memo, list_memos, read_memo, save_memo, select_folder};
+use commands::{create_memo, delete_memo, list_memos, read_memo, rename_memo, save_memo, select_folder};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,6 +14,7 @@ pub fn run() {
             save_memo,
             create_memo,
             delete_memo,
+            rename_memo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,7 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useMemoStore } from "../stores/memoStore";
 import { tauriCommands } from "../tauri/commands";
+import { showError, showSuccess } from "../stores/toastStore";
 
 function generateDefaultFileName(): string {
   const now = new Date();
@@ -11,6 +12,7 @@ function generateDefaultFileName(): string {
 
 export function useMemos() {
   const store = useMemoStore();
+  const openMemoRequestIdRef = useRef(0);
 
   const loadFolder = useCallback(async (folderPath: string) => {
     store.setLoading(true);
@@ -21,6 +23,7 @@ export function useMemos() {
       return memos;
     } catch (error) {
       console.error("Failed to load folder:", error);
+      showError(`Failed to load folder: ${error}`);
       return null;
     } finally {
       store.setLoading(false);
@@ -29,32 +32,37 @@ export function useMemos() {
 
   const openMemo = useCallback(
     async (filePath: string) => {
+      const { workingFolder } = store;
+      if (!workingFolder) return;
+
+      // レース対策: リクエストIDをインクリメントして最新リクエストのみを反映
+      const requestId = ++openMemoRequestIdRef.current;
+
       store.setLoading(true);
       try {
-        const memo = await tauriCommands.readMemo(filePath);
+        const memo = await tauriCommands.readMemo(filePath, workingFolder);
+        // 最新のリクエストでない場合は結果を破棄
+        if (requestId !== openMemoRequestIdRef.current) {
+          return;
+        }
         store.selectMemo(filePath);
         store.setCurrentMemo(memo);
       } catch (error) {
+        // 最新のリクエストでない場合はエラーも表示しない
+        if (requestId !== openMemoRequestIdRef.current) {
+          return;
+        }
         console.error("Failed to open memo:", error);
+        showError(`Failed to open memo: ${error}`);
       } finally {
-        store.setLoading(false);
+        // 最新のリクエストの場合のみローディングを解除
+        if (requestId === openMemoRequestIdRef.current) {
+          store.setLoading(false);
+        }
       }
     },
     [store]
   );
-
-  const openMemo = useCallback(async (filePath: string) => {
-    store.setLoading(true);
-    try {
-      const memo = await tauriCommands.readMemo(filePath);
-      store.selectMemo(filePath);
-      store.setCurrentMemo(memo);
-    } catch (error) {
-      console.error("Failed to open memo:", error);
-    } finally {
-      store.setLoading(false);
-    }
-  }, []);
 
   const selectFolder = useCallback(async () => {
     try {
@@ -79,57 +87,90 @@ export function useMemos() {
       }
     } catch (error) {
       console.error("Failed to select folder:", error);
+      showError(`Failed to select folder: ${error}`);
     }
   }, [loadFolder, openMemo, store]);
 
   const saveMemo = useCallback(async (filePath: string, content: string) => {
-    try {
-      const meta = await tauriCommands.saveMemo(filePath, content);
-      store.updateMemoMeta(filePath, meta);
-      store.markAsSaved();
-    } catch (error) {
-      console.error("Failed to save memo:", error);
-    }
-  }, [store]);
-
-  const createMemo = useCallback(async () => {
     const { workingFolder } = store;
     if (!workingFolder) return;
 
     try {
-      const fileName = generateDefaultFileName();
+      const meta = await tauriCommands.saveMemo(filePath, content, workingFolder);
+      store.updateMemoMeta(filePath, meta);
+      store.markAsSaved();
+      showSuccess("Saved");
+    } catch (error) {
+      console.error("Failed to save memo:", error);
+      showError(`Failed to save memo: ${error}`);
+    }
+  }, [store]);
+
+  const createMemo = useCallback(async (name?: string) => {
+    const { workingFolder } = store;
+    if (!workingFolder) return;
+
+    try {
+      const fileName = name?.trim() || generateDefaultFileName();
       const meta = await tauriCommands.createMemo(workingFolder, fileName);
       store.addMemo(meta);
       await openMemo(meta.path);
+      showSuccess("Memo created");
     } catch (error) {
       console.error("Failed to create memo:", error);
+      showError(`Failed to create memo: ${error}`);
     }
   }, [openMemo, store]);
 
   const deleteMemo = useCallback(async (filePath: string) => {
+    const { workingFolder } = store;
+    if (!workingFolder) return;
+
     try {
-      await tauriCommands.deleteMemo(filePath);
+      await tauriCommands.deleteMemo(filePath, workingFolder);
       store.removeMemo(filePath);
+      showSuccess("Memo deleted");
     } catch (error) {
       console.error("Failed to delete memo:", error);
+      showError(`Failed to delete memo: ${error}`);
     }
   }, [store]);
 
-  useEffect(() => {
+  const renameMemo = useCallback(async (filePath: string, newName: string) => {
     const { workingFolder } = store;
+    if (!workingFolder) return;
+
+    try {
+      const meta = await tauriCommands.renameMemo(filePath, newName, workingFolder);
+      store.renameMemo(filePath, meta);
+      showSuccess("Memo renamed");
+    } catch (error) {
+      console.error("Failed to rename memo:", error);
+      showError(`Failed to rename memo: ${error}`);
+    }
+  }, [store]);
+
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const workingFolder = useMemoStore.getState().workingFolder;
+    const selectedPath = useMemoStore.getState().selectedMemoPath;
+
     if (workingFolder) {
-      const selectedPath = store.selectedMemoPath;
       loadFolder(workingFolder).then((memos) => {
         if (!selectedPath) return;
         if (memos?.some((memo) => memo.path === selectedPath)) {
           openMemo(selectedPath);
         } else {
-          store.selectMemo(null);
-          store.setCurrentMemo(null);
+          useMemoStore.getState().selectMemo(null);
+          useMemoStore.getState().setCurrentMemo(null);
         }
       });
     }
-  }, []);
+  }, [loadFolder, openMemo]);
 
   return {
     workingFolder: store.workingFolder,
@@ -144,5 +185,6 @@ export function useMemos() {
     saveMemo,
     createMemo,
     deleteMemo,
+    renameMemo,
   };
 }
