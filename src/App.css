@@ -1,6 +1,22 @@
 /* ========================================
    CSS Variables
    ======================================== */
+@font-face {
+  font-family: "BIZ UDGothic";
+  src: url("./assets/BIZ_UDGothic/BIZUDGothic-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "BIZ UDGothic";
+  src: url("./assets/BIZ_UDGothic/BIZUDGothic-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Colors - Light Mode */
   --bg-primary: #ffffff;
@@ -38,8 +54,15 @@
   --space-12: 3rem;
 
   /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+  --font-sans: var(--font-user-sans, "BIZ UDGothic"), -apple-system,
+    BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK JP", "Noto Sans JP",
+    "Noto Sans CJK", "Noto Sans", "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "Yu Gothic", "Yu Gothic UI", Meiryo,
     Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace, "Noto Sans Mono CJK JP",
+    "Noto Sans CJK JP", "Noto Sans JP", "Noto Sans", "BIZ UDGothic",
+    sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
   --text-base: 0.875rem;
@@ -233,8 +256,31 @@ body {
 }
 
 .sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-1);
+}
+
+.sidebar-settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: all var(--transition-fast);
+}
+
+.sidebar-settings-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .sidebar-title {
@@ -592,7 +638,7 @@ body {
   border-radius: var(--radius-md);
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: var(--text-md);
   line-height: 1.6;
   resize: none;
@@ -698,7 +744,7 @@ body {
 
 /* Code comment font */
 .cm-comment {
-  font-family: "BIZ UDMincho", serif;
+  font-family: var(--font-mono);
 }
 
 /* ========================================
@@ -820,4 +866,170 @@ body {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* ========================================
+   Settings Dialog
+   ======================================== */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: settings-fade-in 0.15s ease;
+}
+
+@keyframes settings-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.settings-dialog {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: settings-slide-up 0.2s ease;
+}
+
+@keyframes settings-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.settings-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.settings-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.settings-close-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.settings-content {
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: var(--space-6);
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+}
+
+.settings-font-current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.settings-font-label {
+  color: var(--text-secondary);
+}
+
+.settings-font-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.settings-font-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.settings-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.settings-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-btn-primary {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.settings-btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.settings-btn-secondary {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.settings-btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-selected);
+}
+
+.settings-font-hint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin: 0;
 }

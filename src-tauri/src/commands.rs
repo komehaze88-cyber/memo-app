@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
+use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 use thiserror::Error;
 use tokio::sync::oneshot;
@@ -28,6 +29,15 @@ pub enum CommandError {
 
     #[error("Dialog cancelled")]
     DialogCancelled,
+
+    #[error("Unsupported font format: {0}")]
+    UnsupportedFontFormat(String),
+
+    #[error("Font file too large: max {0}MB, got {1}MB")]
+    FileTooLarge(u64, u64),
+
+    #[error("Path error: {0}")]
+    PathError(String),
 }
 
 impl Serialize for CommandError {
@@ -53,6 +63,9 @@ impl CommandError {
             CommandError::NotMarkdownFile => "not_markdown_file",
             CommandError::IoError(_) => "io_error",
             CommandError::DialogCancelled => "dialog_cancelled",
+            CommandError::UnsupportedFontFormat(_) => "unsupported_font_format",
+            CommandError::FileTooLarge(_, _) => "file_too_large",
+            CommandError::PathError(_) => "path_error",
         }
     }
 }
@@ -363,4 +376,144 @@ pub fn rename_memo(file_path: String, new_name: String, working_folder: String) 
         modified_at,
         created_at,
     })
+}
+
+// ============================================================
+// Font Management Commands
+// ============================================================
+
+const ALLOWED_FONT_EXTENSIONS: [&str; 4] = ["ttf", "otf", "woff", "woff2"];
+const MAX_FONT_SIZE_MB: u64 = 50;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InstalledFont {
+    pub id: String,
+    pub label: String,
+    pub filename: String,
+    pub format: String,
+    pub installed_at: u64,
+}
+
+/// Opens a file dialog to pick a font file
+#[tauri::command]
+pub async fn pick_font_file(app: tauri::AppHandle) -> Result<Option<String>, CommandError> {
+    let (tx, rx) = oneshot::channel();
+    app.dialog()
+        .file()
+        .add_filter("Font Files", &ALLOWED_FONT_EXTENSIONS)
+        .pick_file(move |file_path| {
+            let _ = tx.send(file_path);
+        });
+
+    match rx.await {
+        Ok(Some(path)) => Ok(Some(path.to_string())),
+        Ok(None) => Ok(None),
+        Err(_) => Err(CommandError::DialogCancelled),
+    }
+}
+
+/// Installs a font file by copying it to the app data directory
+#[tauri::command]
+pub async fn install_font(
+    app: tauri::AppHandle,
+    font_file_path: String,
+    label: String,
+) -> Result<InstalledFont, CommandError> {
+    let source_path = PathBuf::from(&font_file_path);
+
+    // Validate file exists
+    if !source_path.exists() {
+        return Err(CommandError::FileNotFound(font_file_path));
+    }
+
+    // Validate extension
+    let ext = source_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    if !ALLOWED_FONT_EXTENSIONS.contains(&ext.as_str()) {
+        return Err(CommandError::UnsupportedFontFormat(ext));
+    }
+
+    // Validate file size
+    let metadata = fs::metadata(&source_path)?;
+    let size_mb = metadata.len() / (1024 * 1024);
+    if size_mb > MAX_FONT_SIZE_MB {
+        return Err(CommandError::FileTooLarge(MAX_FONT_SIZE_MB, size_mb));
+    }
+
+    // Get app data directory and create fonts subdirectory
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| CommandError::PathError(e.to_string()))?;
+    let fonts_dir = app_data_dir.join("fonts");
+    fs::create_dir_all(&fonts_dir)?;
+
+    // Generate unique filename using UUID
+    let unique_id = uuid::Uuid::new_v4().to_string();
+    let target_filename = format!("{}.{}", unique_id, ext);
+    let target_path = fonts_dir.join(&target_filename);
+
+    // Copy file to fonts directory
+    fs::copy(&source_path, &target_path)?;
+
+    let installed_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    Ok(InstalledFont {
+        id: unique_id,
+        label,
+        filename: target_filename,
+        format: ext,
+        installed_at,
+    })
+}
+
+/// Gets the full path to an installed font file for loading in the frontend
+#[tauri::command]
+pub async fn get_installed_font_path(
+    app: tauri::AppHandle,
+    font_id: String,
+    format: String,
+) -> Result<String, CommandError> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| CommandError::PathError(e.to_string()))?;
+    let fonts_dir = app_data_dir.join("fonts");
+    let font_filename = format!("{}.{}", font_id, format);
+    let font_path = fonts_dir.join(&font_filename);
+
+    if !font_path.exists() {
+        return Err(CommandError::FileNotFound(font_filename));
+    }
+
+    Ok(font_path.to_string_lossy().to_string())
+}
+
+/// Deletes an installed font file
+#[tauri::command]
+pub async fn delete_installed_font(
+    app: tauri::AppHandle,
+    font_id: String,
+    format: String,
+) -> Result<(), CommandError> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| CommandError::PathError(e.to_string()))?;
+    let fonts_dir = app_data_dir.join("fonts");
+    let font_filename = format!("{}.{}", font_id, format);
+    let font_path = fonts_dir.join(&font_filename);
+
+    if font_path.exists() {
+        fs::remove_file(&font_path)?;
+    }
+
+    Ok(())
 }

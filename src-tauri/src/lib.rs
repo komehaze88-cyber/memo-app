@@ -1,6 +1,9 @@
 mod commands;
 
-use commands::{create_memo, delete_memo, list_memos, read_memo, rename_memo, save_memo, select_folder};
+use commands::{
+    create_memo, delete_installed_font, delete_memo, get_installed_font_path, install_font,
+    list_memos, pick_font_file, read_memo, rename_memo, save_memo, select_folder,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,6 +18,10 @@ pub fn run() {
             create_memo,
             delete_memo,
             rename_memo,
+            pick_font_file,
+            install_font,
+            get_installed_font_path,
+            delete_installed_font,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

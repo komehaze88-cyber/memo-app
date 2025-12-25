@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { MemoMeta, MemoFile } from "../types/memo";
+import type { InstalledFont } from "../types/font";
 
 export const tauriCommands = {
   selectFolder: (): Promise<string | null> => invoke("select_folder"),
@@ -21,4 +22,16 @@ export const tauriCommands = {
 
   renameMemo: (filePath: string, newName: string, workingFolder: string): Promise<MemoMeta> =>
     invoke("rename_memo", { filePath, newName, workingFolder }),
+
+  // Font management commands
+  pickFontFile: (): Promise<string | null> => invoke("pick_font_file"),
+
+  installFont: (fontFilePath: string, label: string): Promise<InstalledFont> =>
+    invoke("install_font", { fontFilePath, label }),
+
+  getInstalledFontPath: (fontId: string, format: string): Promise<string> =>
+    invoke("get_installed_font_path", { fontId, format }),
+
+  deleteInstalledFont: (fontId: string, format: string): Promise<void> =>
+    invoke("delete_installed_font", { fontId, format }),
 };

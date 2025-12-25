@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { MemoList } from "./MemoList";
+import { useSettingsStore } from "../stores/settingsStore";
 import type { MemoMeta } from "../types/memo";
 
 interface SidebarProps {
@@ -31,6 +32,13 @@ export function Sidebar({
   const [isCreating, setIsCreating] = useState(false);
   const [newMemoName, setNewMemoName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const setSettingsDialogOpen = useSettingsStore(
+    (state) => state.setSettingsDialogOpen
+  );
+
+  const handleOpenSettings = useCallback(() => {
+    setSettingsDialogOpen(true);
+  }, [setSettingsDialogOpen]);
 
   useEffect(() => {
     if (isCreating && inputRef.current) {
@@ -69,6 +77,26 @@ export function Sidebar({
           Memo
           {isDirty && <span className="dirty-indicator" />}
         </h1>
+        <button
+          className="sidebar-settings-btn"
+          onClick={handleOpenSettings}
+          aria-label="設定"
+          title="設定"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="8" cy="8" r="2" />
+            <path d="M13.5 8c0-.4-.2-.8-.4-1.1l1-1.5-1-1.7-1.8.3c-.5-.4-1-.7-1.7-.9L9 1.5H7l-.6 1.6c-.6.2-1.2.5-1.7.9l-1.8-.3-1 1.7 1 1.5c-.2.3-.4.7-.4 1.1s.2.8.4 1.1l-1 1.5 1 1.7 1.8-.3c.5.4 1 .7 1.7.9l.6 1.6h2l.6-1.6c.6-.2 1.2-.5 1.7-.9l1.8.3 1-1.7-1-1.5c.2-.3.4-.7.4-1.1z" />
+          </svg>
+        </button>
       </div>
 
       <div className="sidebar-folder">

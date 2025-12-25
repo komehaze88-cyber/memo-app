@@ -3,8 +3,10 @@ import { Layout } from "./components/Layout";
 import { Sidebar } from "./components/Sidebar";
 import { MarkdownEditor, EditorPlaceholder } from "./components/MarkdownEditor";
 import { ToastContainer } from "./components/Toast";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { useMemos } from "./hooks/useMemos";
 import { useManualSave } from "./hooks/useAutoSave";
+import { useFontLoader } from "./hooks/useFontLoader";
 import "./App.css";
 
 function App() {
@@ -32,6 +34,9 @@ function App() {
   );
 
   const { saveNow, flushSave } = useManualSave(currentMemo?.content || "", currentMemo?.path || null, handleSave);
+
+  // Load custom fonts
+  useFontLoader();
 
   const handleSelectMemo = useCallback(
     async (path: string) => {
@@ -73,6 +78,7 @@ function App() {
         }
       />
       <ToastContainer />
+      <SettingsDialog />
     </>
   );
 }
